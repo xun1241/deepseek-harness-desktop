@@ -203,9 +203,12 @@ export function apply(ctx: Context, config: Config): void {
     },
   )
   const applyWorkspaceHomeDirectory = (value: DesktopSettings | undefined): void => {
-    runtime.setWorkspaceHomeDirectory(value?.homeDirectory)
+    const setWorkspaceHomeDirectory = (
+      runtime as { setWorkspaceHomeDirectory?: (directory: string | undefined) => void }
+    ).setWorkspaceHomeDirectory
+    setWorkspaceHomeDirectory?.(value?.homeDirectory)
   }
-  applyWorkspaceHomeDirectory(ctx.settings.get(DESKTOP_SETTINGS_NAMESPACE) as DesktopSettings | undefined)
+  applyWorkspaceHomeDirectory(settings.get() as DesktopSettings | undefined)
   ctx.on('settings/updated', (namespace, next) => {
     if (namespace !== DESKTOP_SETTINGS_NAMESPACE) return
     applyWorkspaceHomeDirectory(next as DesktopSettings)
