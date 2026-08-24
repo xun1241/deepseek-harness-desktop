@@ -268,6 +268,11 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
   }
 
   /** @inheritdoc */
+  setWorkspaceHomeDirectory(directory: string | undefined): void {
+    this.workspaceAdmission.setHomeDirectory(directory)
+  }
+
+  /** @inheritdoc */
   async validateDirectory(path: string): Promise<boolean> {
     return await this.workspaceAdmission.validateDirectory(path)
   }

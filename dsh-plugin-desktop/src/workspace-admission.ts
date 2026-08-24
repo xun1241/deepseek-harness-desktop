@@ -24,8 +24,14 @@ export interface ElectronWorkspaceAdmissionOptions {
 /** Own native workspace selection and every Desktop policy decision before persistence. */
 export class ElectronWorkspaceAdmission {
   private pickTask: Promise<string | null> | undefined
+  private homeDirectory: string | undefined
 
   constructor(private readonly options: ElectronWorkspaceAdmissionOptions) {}
+
+  /** Update the starting folder used by the native workspace-folder chooser. */
+  setHomeDirectory(directory: string | undefined): void {
+    this.homeDirectory = directory?.trim() === '' ? undefined : directory
+  }
 
   /** Select one directory through the native platform adapter, coalescing concurrent requests. */
   async pickDirectory(): Promise<string | null> {
@@ -88,10 +94,12 @@ export class ElectronWorkspaceAdmission {
   }
 
   private async showDirectoryPicker(): Promise<string | null> {
-    const result = await this.options.showOpenDialog({
+    const options: OpenDialogOptions = {
       title: this.options.locale() === 'zh' ? '选择工作区目录' : 'Select Workspace Directory',
       properties: ['openDirectory', 'dontAddToRecent'],
-    })
+    }
+    if (this.homeDirectory !== undefined) options.defaultPath = this.homeDirectory
+    const result = await this.options.showOpenDialog(options)
     return result.canceled ? null : result.filePaths[0] ?? null
   }
 }

@@ -18,6 +18,8 @@ export interface DesktopShellSettings {
   readonly windowsMaterial: 'off' | 'acrylic' | 'mica'
   readonly port: number
   readonly logLevel: 'debug' | 'info' | 'warn' | 'error'
+  /** Optional custom home directory used as the starting folder of the workspace picker. */
+  readonly homeDirectory?: string
 }
 
 /** Browser view of the Host `dsh-desktop-notifications` settings namespace. */
@@ -46,7 +48,7 @@ export type DesktopSettingsSectionProps =
   & InjectFace<DesktopSettingsSectionInjected>
 
 type Translate = DesktopSettingsSectionProps['t']
-type BusyOperation = 'load' | 'create-profile' | 'select-profile' | 'delete-profile' | 'select-market' | 'mode' | 'material' | 'notification'
+type BusyOperation = 'load' | 'create-profile' | 'select-profile' | 'delete-profile' | 'select-market' | 'mode' | 'material' | 'notification' | 'home-directory'
 type RestartState = 'none' | 'restarting' | 'required'
 
 function useScope<T>(scope: SettingsScope<T>) {
@@ -208,6 +210,7 @@ export function DesktopSettingsSection({
   const [operationFailed, setOperationFailed] = useState(false)
   const [restart, setRestart] = useState<RestartState>('none')
   const [pendingProfileDelete, setPendingProfileDelete] = useState<string>()
+  const [homeDirectory, setHomeDirectory] = useState('')
 
   const load = useCallback(async () => {
     setBusy('load')
@@ -228,6 +231,9 @@ export function DesktopSettingsSection({
     const timer = setTimeout(() => { setRestart('required') }, 8_000)
     return () => { clearTimeout(timer) }
   }, [restart])
+  useEffect(() => {
+    setHomeDirectory(desktop.value?.homeDirectory ?? '')
+  }, [desktop.value?.homeDirectory])
 
   const run = useCallback(async (operation: BusyOperation, invoke: () => Promise<void>) => {
     setBusy(operation)
@@ -292,6 +298,14 @@ export function DesktopSettingsSection({
     void run('mode', async () => {
       await desktopSettings.set('mode', next)
       requestRestart()
+    })
+  }
+
+  const saveHomeDirectory = (event: FormEvent): void => {
+    event.preventDefault()
+    const value = homeDirectory.trim()
+    void run('home-directory', async () => {
+      await desktopSettings.set('homeDirectory', value.length === 0 ? undefined : value)
     })
   }
 
@@ -511,6 +525,27 @@ export function DesktopSettingsSection({
             </select>
           </label>
         )}
+        <form className="dshDesktopSettingsForm" onSubmit={saveHomeDirectory}>
+          <label className="dshDesktopSettingsField">
+            {t('homeDirectory')}
+            <input
+              className="dshDesktopSettingsInput"
+              value={homeDirectory}
+              autoComplete="off"
+              placeholder={t('homeDirectoryPlaceholder')}
+              disabled={!settingsWritable || busy !== undefined || restart !== 'none'}
+              onChange={event => { setHomeDirectory(event.currentTarget.value) }}
+            />
+          </label>
+          <button
+            type="submit"
+            className="dshDesktopSettingsButton"
+            disabled={!settingsWritable || busy !== undefined || restart !== 'none'}
+          >
+            {busy === 'home-directory' ? t('savingHomeDirectory') : t('saveHomeDirectory')}
+          </button>
+        </form>
+        <p className="dshDesktopSettingsGroupIntro">{t('homeDirectoryHint')}</p>
       </section>
 
       <section className="dshDesktopSettingsGroup" aria-labelledby="dsh-desktop-notifications-title">

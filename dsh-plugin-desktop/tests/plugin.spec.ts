@@ -94,6 +94,7 @@ function createHarness(platform: DesktopRuntime['platform'] = 'darwin'): PluginH
     exportDiagnostics: async () => {},
     pickDirectory,
     validateDirectory,
+    setWorkspaceHomeDirectory: vi.fn(() => {}),
     openProfileCreateWindow: () => {},
     reportRendererBoot: rendererBoot,
     setLocalePreference,

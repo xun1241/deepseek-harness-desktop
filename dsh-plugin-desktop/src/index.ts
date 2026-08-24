@@ -90,6 +90,8 @@ export interface DesktopSettings {
   port: number
   /** Log verbosity threshold applied to the file logger. */
   logLevel: 'debug' | 'info' | 'warn' | 'error'
+  /** Optional custom home directory used as the starting folder of the workspace picker. */
+  homeDirectory?: string
 }
 
 /** Schema registered with the standard settings service. */
@@ -99,6 +101,7 @@ export const DesktopSettingsSchema: z<DesktopSettings> = z.object({
   windowsMaterial: z.union(['off', 'acrylic', 'mica'] as const).default(DEFAULT_WINDOWS_WINDOW_MATERIAL),
   port: z.number().step(1).min(0).max(65_535).default(DESKTOP_DEFAULT_WEB_PORT),
   logLevel: z.union(['debug', 'info', 'warn', 'error'] as const).default('info'),
+  homeDirectory: z.string(),
 })
 
 /** Native window configuration. */
@@ -199,6 +202,14 @@ export function apply(ctx: Context, config: Config): void {
       },
     },
   )
+  const applyWorkspaceHomeDirectory = (value: DesktopSettings | undefined): void => {
+    runtime.setWorkspaceHomeDirectory(value?.homeDirectory)
+  }
+  applyWorkspaceHomeDirectory(ctx.settings.get(DESKTOP_SETTINGS_NAMESPACE) as DesktopSettings | undefined)
+  ctx.on('settings/updated', (namespace, next) => {
+    if (namespace !== DESKTOP_SETTINGS_NAMESPACE) return
+    applyWorkspaceHomeDirectory(next as DesktopSettings)
+  })
   const rendererOrigin = `http://127.0.0.1:${String(ctx.webServer.port)}`
   ctx.on('webserver/index-inject', table => {
     table.push(...desktopBootRecoveryInjections())
